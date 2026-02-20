@@ -1,0 +1,62 @@
+spring:
+  application:
+    name: stock-quotes
+
+  datasource:
+    url: jdbc:postgresql://${POSTGRESQL_HOST}:${POSTGRESQL_PORT}/${POSTGRESQL_DATABASE}
+    username: ${POSTGRESQL_USER}
+    password: ${POSTGRESQL_PASSWORD}
+    driver-class-name: org.postgresql.Driver
+
+  jpa:
+    hibernate:
+      ddl-auto: validate
+    show-sql: ${SHOW_SQL:false}
+    properties:
+      hibernate:
+        format_sql: ${FORMAT_SQL:false}
+        dialect: org.hibernate.dialect.PostgreSQLDialect
+
+  data:
+    redis:
+      host: ${REDIS_HOST}
+      port: ${REDIS_PORT}
+      password: ${REDIS_PASSWORD}
+
+  cache:
+    type: redis
+
+server:
+  port: 8080
+
+finnhub:
+  base-url: https://finnhub.io/api/v1
+  token: ${FINNHUB_TOKEN}
+  refresh-rate-ms: 60000
+  symbols:
+    - AAPL
+    - MSFT
+    - NVDA
+    - TSLA
+    - GOOGL
+    - AMZN
+    - META
+    - JPM
+    - NFLX
+    - AMD
+    - INTC
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health, info, metrics, prometheus, circuitbreakers
+  endpoint:
+    health:
+      show-details: always
+
+logging:
+  level:
+    root: ${LOG_LEVEL:INFO}
+    tech.stockquotes: ${APP_LOG_LEVEL:DEBUG}
+    org.hibernate: ${APP_LOG_LEVEL_HIBERNATE:WARN}

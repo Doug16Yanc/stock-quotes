@@ -1,0 +1,108 @@
+package tech.stockquotes.config.resilience;
+
+import io.github.resilience4j.circuitbreaker.CircuitBreakerConfig;
+import io.github.resilience4j.circuitbreaker.CircuitBreakerRegistry;
+import io.github.resilience4j.core.IntervalFunction;
+import io.github.resilience4j.retry.RetryConfig;
+import io.github.resilience4j.retry.RetryRegistry;
+import io.github.resilience4j.timelimiter.TimeLimiterConfig;
+import io.github.resilience4j.timelimiter.TimeLimiterRegistry;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Configuration;
+
+import java.io.IOException;
+import java.net.ConnectException;
+import java.net.SocketTimeoutException;
+import java.time.Duration;
+import java.util.concurrent.TimeoutException;
+
+@Slf4j
+@Configuration
+public class Resilience4jConfig {
+
+    @Bean
+    public CircuitBreakerRegistry circuitBreakerRegistry() {
+        CircuitBreakerConfig config = CircuitBreakerConfig.custom()
+                .slidingWindowType(CircuitBreakerConfig.SlidingWindowType.COUNT_BASED)
+                .slidingWindowSize(10)
+                .minimumNumberOfCalls(5)
+                .failureRateThreshold(50)
+                .slowCallRateThreshold(50)
+                .slowCallDurationThreshold(Duration.ofSeconds(3))
+                .permittedNumberOfCallsInHalfOpenState(3)
+                .waitDurationInOpenState(Duration.ofSeconds(20))
+                .automaticTransitionFromOpenToHalfOpenEnabled(true)
+                .recordExceptions(
+                        ConnectException.class,
+                        SocketTimeoutException.class,
+                        IOException.class,
+                        TimeoutException.class
+                )
+                .ignoreExceptions(
+                        IllegalArgumentException.class
+                )
+                .build();
+
+        CircuitBreakerRegistry registry = CircuitBreakerRegistry.of(config);
+
+        registry.circuitBreaker("financialApiCircuitBreaker")
+                .getEventPublisher()
+                .onStateTransition(event ->
+                        log.warn("Financial API Circuit Breaker state changed: {} -> {}",
+                                event.getStateTransition().getFromState(),
+                                event.getStateTransition().getToState())
+                )
+                .onFailureRateExceeded(event ->
+                        log.error("Financial API Circuit Breaker failure rate exceeded: {}%",
+                                event.getFailureRate())
+                );
+        return registry;
+    }
+
+    @Bean
+    public RetryRegistry retryRegistry() {
+        RetryConfig config = RetryConfig.custom()
+                .maxAttempts(3)
+                .intervalFunction(IntervalFunction
+                        .ofExponentialBackoff(Duration.ofSeconds(1), 2))
+                .retryExceptions(
+                        java.net.ConnectException.class,
+                        java.net.SocketTimeoutException.class
+                )
+                .ignoreExceptions(
+                        IllegalArgumentException.class
+                )
+                .build();
+
+        RetryRegistry registry = RetryRegistry.of(config);
+
+        registry.retry("financialApiRetry")
+                .getEventPublisher()
+                .onRetry(event ->
+                        log.warn("Financial API retry attempt {} of {}",
+                                event.getNumberOfRetryAttempts(),
+                                3)
+                );
+
+        return registry;
+    }
+
+    @Bean
+    public TimeLimiterRegistry timeLimiterRegistry() {
+        TimeLimiterConfig config = TimeLimiterConfig.custom()
+                .timeoutDuration(Duration.ofSeconds(10))
+                .cancelRunningFuture(true)
+                .build();
+
+        TimeLimiterRegistry registry = TimeLimiterRegistry.of(config);
+
+        registry.timeLimiter("financialApiTimeLimiter")
+                .getEventPublisher()
+                .onTimeout(event ->
+                        log.error("Financial API call timeout after 10 seconds")
+                );
+
+        return registry;
+    }
+}
