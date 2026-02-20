@@ -40,7 +40,7 @@ public class StockQuoteService {
         return stockQuoteRepository.save(stockQuote);
     }
 
-    @Scheduled(fixedRateString = "${finnbuh.refresh-rate-ms:60000}")
+    @Scheduled(fixedRateString = "${finnhub.refresh-rate-ms:60000}")
     public void refreshQuotes() {
         properties.symbols().forEach(symbol -> {
                 try {
