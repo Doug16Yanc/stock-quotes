@@ -13,4 +13,8 @@ public record FinnhubQuoteResponse(
         @JsonProperty("o") BigDecimal openPrice,
         @JsonProperty("pc") BigDecimal previousClose,
         @JsonProperty("t") Long timestamp
-) {}
+) {
+    public static FinnhubQuoteResponse empty() {
+        return new FinnhubQuoteResponse(BigDecimal.ZERO, BigDecimal.ZERO, BigDecimal.ZERO, BigDecimal.ZERO, BigDecimal.ZERO, BigDecimal.ZERO, BigDecimal.ZERO, 0L);
+    }
+}

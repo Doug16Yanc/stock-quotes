@@ -20,16 +20,14 @@ public class CacheConfig {
 
     @Bean
     public RedisCacheManager cacheManager(RedisConnectionFactory connectionFactory) {
-
         GenericJacksonJsonRedisSerializer serializer = GenericJacksonJsonRedisSerializer.builder()
                 .typePropertyName("_type")
+                .enableUnsafeDefaultTyping()
                 .build();
 
         RedisCacheConfiguration defaultConfig = RedisCacheConfiguration.defaultCacheConfig()
-                .serializeKeysWith(RedisSerializationContext.SerializationPair
-                        .fromSerializer(new StringRedisSerializer()))
-                .serializeValuesWith(RedisSerializationContext.SerializationPair
-                        .fromSerializer(serializer))
+                .serializeKeysWith(RedisSerializationContext.SerializationPair.fromSerializer(new StringRedisSerializer()))
+                .serializeValuesWith(RedisSerializationContext.SerializationPair.fromSerializer(serializer))
                 .disableCachingNullValues()
                 .entryTtl(Duration.ofMinutes(5));
 
@@ -47,6 +45,7 @@ public class CacheConfig {
     public RedisTemplate<String, Object> redisTemplate(RedisConnectionFactory connectionFactory) {
         GenericJacksonJsonRedisSerializer serializer = GenericJacksonJsonRedisSerializer.builder()
                 .typePropertyName("_type")
+                .enableUnsafeDefaultTyping()
                 .build();
 
         RedisTemplate<String, Object> template = new RedisTemplate<>();
@@ -56,7 +55,6 @@ public class CacheConfig {
         template.setValueSerializer(serializer);
         template.setHashValueSerializer(serializer);
         template.afterPropertiesSet();
-
         return template;
     }
 }

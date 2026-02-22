@@ -10,7 +10,7 @@ spring:
 
   jpa:
     hibernate:
-      ddl-auto: validate # use create-drop for tests
+      ddl-auto: create # use update for dev, create-drop for tests and validate for homolog and prod
     show-sql: ${SHOW_SQL:false}
     properties:
       hibernate:
@@ -20,17 +20,30 @@ spring:
   data:
     redis:
       host: ${REDIS_HOST}
-      port: ${REDIS_PORT}
+      port: ${REDIS_PORT:6379}
       password: ${REDIS_PASSWORD}
+      lettuce:
+        pool:
+          max-active: 10
+          max-idle: 5
+          min-idle: 2
+        timeout: 3000ms
 
   cache:
     type: redis
+    cache-names:
+      - quotes
+      - symbols
+    redis:
+      time-to-live: 600000
+      cache-null-values: false
 
 server:
   port: 8080
 
 finnhub:
-  base-url: https://finnhub.io/api/v1
+#  base-url: ${FINNHUB_BASE_URL}
+  base-url: http://nginx:20000/api/v1
   token: ${FINNHUB_TOKEN}
   refresh-rate-ms: 60000
   symbols:

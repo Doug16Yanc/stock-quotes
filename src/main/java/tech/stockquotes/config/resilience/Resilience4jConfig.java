@@ -10,6 +10,8 @@ import io.github.resilience4j.timelimiter.TimeLimiterRegistry;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.web.reactive.function.client.WebClientException;
+import org.springframework.web.reactive.function.client.WebClientRequestException;
 
 import java.io.IOException;
 import java.net.ConnectException;
@@ -31,13 +33,14 @@ public class Resilience4jConfig {
                 .slowCallRateThreshold(50)
                 .slowCallDurationThreshold(Duration.ofSeconds(3))
                 .permittedNumberOfCallsInHalfOpenState(3)
-                .waitDurationInOpenState(Duration.ofSeconds(20))
+                .waitDurationInOpenState(Duration.ofSeconds(10))
                 .automaticTransitionFromOpenToHalfOpenEnabled(true)
                 .recordExceptions(
                         ConnectException.class,
                         SocketTimeoutException.class,
                         IOException.class,
-                        TimeoutException.class
+                        TimeoutException.class,
+                        WebClientRequestException.class
                 )
                 .ignoreExceptions(
                         IllegalArgumentException.class
@@ -46,7 +49,7 @@ public class Resilience4jConfig {
 
         CircuitBreakerRegistry registry = CircuitBreakerRegistry.of(config);
 
-        registry.circuitBreaker("financialApiCircuitBreaker")
+        registry.circuitBreaker("financialApi")
                 .getEventPublisher()
                 .onStateTransition(event ->
                         log.warn("Financial API Circuit Breaker state changed: {} -> {}",
@@ -77,7 +80,7 @@ public class Resilience4jConfig {
 
         RetryRegistry registry = RetryRegistry.of(config);
 
-        registry.retry("financialApiRetry")
+        registry.retry("financialApi")
                 .getEventPublisher()
                 .onRetry(event ->
                         log.warn("Financial API retry attempt {} of {}",

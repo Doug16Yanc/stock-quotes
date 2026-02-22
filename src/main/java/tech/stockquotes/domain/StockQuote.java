@@ -1,5 +1,6 @@
 package tech.stockquotes.domain;
 
+import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import jakarta.persistence.*;
 import lombok.*;
 

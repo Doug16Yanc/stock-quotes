@@ -1,53 +1,74 @@
 package tech.stockquotes.service;
 
-import org.springframework.scheduling.annotation.Scheduled;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.cache.Cache;
+import org.springframework.cache.CacheManager;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
-import org.springframework.web.reactive.function.client.WebClient;
 import tech.stockquotes.config.property.FinnhubProperties;
 import tech.stockquotes.domain.StockQuote;
 import tech.stockquotes.dto.FinnhubQuoteResponse;
 import tech.stockquotes.mapper.StockQuoteMapper;
 import tech.stockquotes.repository.StockQuoteRepository;
+import tech.stockquotes.service.client.FinnhubClient;
 
 @Service
+@Slf4j
 public class StockQuoteService {
 
     private final StockQuoteRepository stockQuoteRepository;
     private final StockQuoteMapper stockQuoteMapper;
     private final FinnhubProperties properties;
-    private final WebClient finnhubWebClient;
+    private final FinnhubClient finnhubClient;
+    private final CacheManager cacheManager;
 
-    public StockQuoteService(StockQuoteRepository stockQuoteRepository, StockQuoteMapper stockQuoteMapper, FinnhubProperties properties, WebClient finnhubWebClient) {
+    public StockQuoteService(
+            StockQuoteRepository stockQuoteRepository,
+            StockQuoteMapper stockQuoteMapper,
+            FinnhubProperties properties,
+            FinnhubClient finnhubClient,
+            CacheManager cacheManager) {
         this.stockQuoteRepository = stockQuoteRepository;
         this.stockQuoteMapper = stockQuoteMapper;
         this.properties = properties;
-        this.finnhubWebClient = finnhubWebClient;
+        this.finnhubClient = finnhubClient;
+        this.cacheManager = cacheManager;
     }
 
+    @Cacheable(value = "quotes", key = "#symbol")
     public StockQuote getQuote(String symbol) {
-        FinnhubQuoteResponse response = finnhubWebClient.get()
-                .uri(uri -> uri.path("/quote")
-                        .queryParam("symbol", symbol)
-                        .queryParam("token", properties.token())
-                        .build()
-                )
-                .retrieve()
-                .bodyToMono(FinnhubQuoteResponse.class)
-                .block();
+        log.info("Cache MISS for symbol: {}", symbol);
 
-        StockQuote stockQuote = stockQuoteMapper.toEntity(symbol, response);
+        FinnhubQuoteResponse response = finnhubClient.fetchQuote(symbol);
 
-        return stockQuoteRepository.save(stockQuote);
+        StockQuote quote = stockQuoteMapper.toEntity(symbol, response);
+
+        return stockQuoteRepository.save(quote);
     }
 
-    @Scheduled(fixedRateString = "${finnhub.refresh-rate-ms:60000}")
+    public StockQuote refreshQuote(String symbol) {
+        log.info("Forced REFRESH for symbol: {}", symbol);
+
+        FinnhubQuoteResponse response = finnhubClient.fetchQuote(symbol);
+        StockQuote updated = stockQuoteMapper.toEntity(symbol, response);
+
+        updated = stockQuoteRepository.save(updated);
+
+        Cache cache = cacheManager.getCache("quotes");
+        if (cache != null) {
+            cache.put(symbol, updated);
+        }
+
+        return updated;
+    }
+
     public void refreshQuotes() {
         properties.symbols().forEach(symbol -> {
-                try {
-                    getQuote(symbol);
-                } catch (Exception e) {
-                    /* circuit breaker will handle it. Does not propagate */
-                }
+            try {
+                refreshQuote(symbol);
+            } catch (Exception e) {
+                log.error("Failed to refresh quote for {}: {}", symbol, e.getMessage());
+            }
         });
     }
 }

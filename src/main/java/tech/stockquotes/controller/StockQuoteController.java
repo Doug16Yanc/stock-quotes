@@ -1,5 +1,6 @@
 package tech.stockquotes.controller;
 
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -10,6 +11,7 @@ import tech.stockquotes.service.StockQuoteService;
 
 @RestController
 @RequestMapping("/api/v1/stock-quotes")
+@Slf4j
 public class StockQuoteController {
 
     private final StockQuoteService stockQuoteService;
@@ -20,6 +22,9 @@ public class StockQuoteController {
 
     @GetMapping("/get-by-symbol/{symbol}")
     public ResponseEntity<StockQuote> getStockQuote(@PathVariable String symbol) {
-        return ResponseEntity.ok().body(stockQuoteService.getQuote(symbol));
+        long start = System.currentTimeMillis();
+        StockQuote quote = stockQuoteService.getQuote(symbol);
+        log.info("getQuote({}) took {}ms", symbol, System.currentTimeMillis() - start);
+        return ResponseEntity.ok().body(quote);
     }
 }
