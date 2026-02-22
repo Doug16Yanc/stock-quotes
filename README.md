@@ -48,6 +48,9 @@ Client
 
 ## 📊 Measured Results
 
+![Chaos Engineering Chart](assets/chaos_engineering_chart.png)
+
+
 | Scenario | Latency |
 |---|---|
 | First call — cold cache | ~29ms |
