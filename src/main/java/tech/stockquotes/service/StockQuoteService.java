@@ -8,9 +8,12 @@ import org.springframework.stereotype.Service;
 import tech.stockquotes.config.property.FinnhubProperties;
 import tech.stockquotes.domain.StockQuote;
 import tech.stockquotes.dto.FinnhubQuoteResponse;
+import tech.stockquotes.exception.local.AssetNotFoundException;
 import tech.stockquotes.mapper.StockQuoteMapper;
 import tech.stockquotes.repository.StockQuoteRepository;
-import tech.stockquotes.service.client.FinnhubClient;
+
+import java.math.BigDecimal;
+import java.util.Objects;
 
 @Service
 @Slf4j
@@ -40,6 +43,10 @@ public class StockQuoteService {
         log.info("Cache MISS for symbol: {}", symbol);
 
         FinnhubQuoteResponse response = finnhubClient.fetchQuote(symbol);
+
+        if (Objects.equals(response.currentPrice(), BigDecimal.ZERO)) {
+            throw new AssetNotFoundException("Asset not found for symbol: " + symbol);
+        }
 
         StockQuote quote = stockQuoteMapper.toEntity(symbol, response);
 

@@ -7,7 +7,6 @@ import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.web.reactive.function.client.WebClient;
 import reactor.core.publisher.Mono;
 import tech.stockquotes.dto.FinnhubQuoteResponse;
-import tech.stockquotes.service.client.FinnhubClientImpl;
 
 import java.math.BigDecimal;
 import java.util.function.Function;
@@ -19,7 +18,7 @@ import static org.mockito.Mockito.when;
 class FinnhubClientTest extends BaseIntegrationTest {
 
     @Autowired
-    private FinnhubClientImpl finnhubClient;
+    private FinnhubClient finnhubClient;
 
     @MockitoBean
     private WebClient finnhubWebClient;

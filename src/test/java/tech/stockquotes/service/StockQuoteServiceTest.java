@@ -9,7 +9,6 @@ import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import tech.stockquotes.domain.StockQuote;
 import tech.stockquotes.dto.FinnhubQuoteResponse;
 import tech.stockquotes.repository.StockQuoteRepository;
-import tech.stockquotes.service.client.FinnhubClientImpl;
 
 import java.math.BigDecimal;
 
@@ -32,7 +31,7 @@ class StockQuoteServiceTest extends BaseIntegrationTest {
     private RedisTemplate<String, Object> redisTemplate;
 
     @MockitoBean
-    private FinnhubClientImpl finnhubClient;
+    private FinnhubClient finnhubClient;
 
     @BeforeEach
     void setUp() {

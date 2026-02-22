@@ -1,4 +1,4 @@
-package tech.stockquotes.service.client;
+package tech.stockquotes.service;
 
 import io.github.resilience4j.circuitbreaker.annotation.CircuitBreaker;
 import io.github.resilience4j.retry.annotation.Retry;
@@ -13,19 +13,14 @@ import java.time.Duration;
 
 @Service
 @Slf4j
-public class FinnhubClientImpl implements  FinnhubClient {
+public class FinnhubClient {
 
     private final WebClient finnhubWebClient;
     private final FinnhubProperties properties;
 
-    public FinnhubClientImpl(WebClient finnhubWebClient, FinnhubProperties properties) {
+    public FinnhubClient(WebClient finnhubWebClient, FinnhubProperties properties) {
         this.finnhubWebClient = finnhubWebClient;
         this.properties = properties;
-    }
-
-    @PostConstruct
-    public void init() {
-        log.info("FinnhubClient class: {}", this.getClass().getName());
     }
 
     @CircuitBreaker(name = "financialApi", fallbackMethod = "fetchQuoteFallback")
